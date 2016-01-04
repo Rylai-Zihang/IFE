@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>task0002</title>
+    <link rel="stylesheet" href="style.css">
+    <script>
+        var script= document.createElement("script");
+            script.type="text/javascript";
+            if(script.readyState){//IE
+                script.onreadystatechange = function(){
+                    if (script.readyState =="loaded"||script.readyState =="complete"){//兼容性
+                        script.onreadystatechange=null;
+                        alert("script loaded")
+                    }
+                }
+            }
+            script.src="util.js";
+            document.getElementsByTagName("head")  [0].appendChild(script);
+    </script>    
+</head>
+<body>
+    <div id ="dom-class" class="center">
+        DOM ClassName
+    </div>
+</body>
+</html>
