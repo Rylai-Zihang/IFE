@@ -28,6 +28,7 @@ function clone(obj){
 }
 
 //浅拷贝：拷贝对象以指针的方式进行拷贝  即拷贝对象指针同原对象均是同一个对象的引用
+/*
 var srcObj = {
     a: "code better",
     b: {
@@ -35,8 +36,64 @@ var srcObj = {
         b2: "JavaScript"
     }
 };
+
+
 var abObj = srcObj;
 var tarObj = clone(srcObj);
+
+srcObj.a = "come";
+srcObj.b.b1[0] = "Hello";
+//引用类型值——复制的实质：两个变量引用一个同对象
+console.log(abObj.a);//come
+console.log(abObj.b.b1[0]);//Hello
+
+console.log(tarObj.a);      // code better
+console.log(tarObj.b.b1[0]);    // "Hello"
+*/
+
+//深拷贝-----------------------------------------------
+//使用递归来实现一个深度克隆，可以复制一个目标对象，返回一个完整拷贝
+// 被复制的对象类型会被限制为数字、字符串、布尔、日期、数组、Object对象。不会包含函数、正则对象等
+
+//所有类型的深拷贝
+var cloneObject = function(src){
+    var clone =src;
+//  对于Object和Array的遍历，可以使用for in，这样可以保证在在Array对象上扩展的属性也可以正确复制
+    if(src instanceof Array){
+        for(key in src){
+            clone[key]= arguments.callee(src[key]);
+        }
+    }
+    if(src instanceof Object){
+        for(key in src){
+            if(src.hasOwnProperty(key)){//忽略继承属性
+                clone[key] =cloneObject(src[key])
+            }
+        }
+    }
+//    对于Date,String,Boolean等引用类型的数据，需要考虑调用构造函数重新构造，直接赋值依然会有引用问题（不是真正的clone引用变量
+    if(src instanceof Date){
+        clone=new Date(src)
+    }
+    return clone;
+}
+
+ 
+//var date = new Date("July 21, 1983 01:15:00");
+//var myDate = cloneObject(date);
+//console.log(myDate)      //Thu Jul 21 1983 01:15:00 GMT+0800 
+
+//测试用例
+/*var srcObj = {
+    a: "code better",
+    b: {
+        b1: ["hello", "hi"],
+        b2: "JavaScript"
+    }
+};
+
+var abObj = srcObj;
+var tarObj = cloneObject(srcObj);
 
 srcObj.a = "come";
 srcObj.b.b1[0] = "Hello";
@@ -45,41 +102,16 @@ console.log(abObj.a);//come
 console.log(abObj.b.b1[0]);//Hello
 
 console.log(tarObj.a);      // code better
-console.log(tarObj.b.b1[0]);    // "Hello"
+console.log(tarObj.b.b1[0]);    // "hello"
 
-//深拷贝-----------------------------------------------
-//递归：调用自身，使用argument.callee等价于当前调用的函数
-var cloneObject =function(obj){
-    var result={};
-    for(key in obj){
-        var copy = obj[key];
-        if(typeof copy =="object"){
-            result[key]= arguments.callee(copy);
-        }else{
-            result[key] = copy;
-        }
-    }
-    return result;
-    
-}
-
-//深拷贝：对拷贝对象进行改变不会影响到原对象 
-//var abObj = srcObj;
-//var tarObj = cloneObject(srcObj);
-//
-//srcObj.a = "come";
-//srcObj.b.b1[0] = "Hello";
-//
-//console.log(abObj.a);//come
-//console.log(abObj.b.b1[0]);//Hello
-//
-//console.log(tarObj.a);      // code better
-//console.log(tarObj.b.b1[0]);    // "hello"
+*/
 
 //数组去重--------------------------------------------
-function uniqArray(arr){
+
+//原始方法
+function uniqArray1(arr){
      var tempArr=[];
-     for(var i=0;i<arr.length;i++){
+     for(var i=0,len=arr.length;i<len;i++){
         if(tempArr.indexOf(arr[i])==-1){
             tempArr.push(arr[i]);
         }
@@ -87,40 +119,75 @@ function uniqArray(arr){
     return tempArr;
 }
 
-//var a = [1, 3, 5, 7, 5, 3];
-//var b = uniqArray(a);
-//console.log(b); // [1, 3, 5, 7]
+//hash——只考虑数组内为字符串和数字的话
+//hash1
+function uniqArray2(arr){
+    var hashTable={};
+    for(var i=0;i<arr.length;i++){
+        var key=arr[i];
+        hashTable[key]=true;
+    }
+    return Object.keys(hashTable)//?why:string类 
+}
+//hash2
+function uniqArray3(arr){
+    var hash={};
+    return arr.filter(function(item){
+        return hash.hasOwnProperty(item)?false:(hash[item]=true);
+    }); 
+}
+
+//测试用例
+/*
+var a = [1, 3, 5, 7, 5, 3];
+var b = uniqArray1(a);
+console.log(b); // [1, 3, 5, 7]
+b = uniqArray2(a);
+console.log(b); // ["1", "3", "5", "7"]
+//如果只考虑数组内为字符串和数字的话，可以使用HashMap方式进行字典去重，但需要考虑作为HashKey相同时（比如：’1’和1），要使用type区分处理
+a=[1,"1",{a:1},{a:2}]
+b=uniqArray3(a);
+console.log(b);//[1, Object]
+*/
+
 
 //去除空格及制表符(一)普通函数
 //循环之后变量依然存在
-//arrayObject.slice(start,end)：从start到end处(不包括)的字符串,接受负参数，负参数相当于从尾部开始
-//arrayObject.subString(start,end):不接受负参数
+
+
+//改进版——使用正则表达式
+function isTrim(c){
+    var pattern=/\s/g;
+    return pattern.test(c);
+}
+
 function simpleTrim(str) {
     // your implement
     var temp=[];
     for(var i=0;i<str.length;i++){ 
-        if(str[i]!=" "&&str[i]!="/t"){
+        if(!isTrim(str[i])){
             break;
         }
     };
     for(var j=str.length-1;j>=0;j--){
-        if(str[j]!=" "&&str[j]!="/t"){
+        if(!isTrim(str[j])){
             break;
         }    
     }
-//    console.log(i);
-//    console.log(j);
-    temp=str.slice(i,j);
+    temp=str.slice(i,j+1);
     return temp;
 }
 
-//var str = '   hi!  ';
-//str = simpleTrim(str);
-//console.log(str); // 'hi!'
 
-//去除空格及制表符(二)  正则表达式：空格制表符 转换为空字符""
+/*
+var str = '   hi!  ';
+str = simpleTrim(str);
+console.log(str); // 'hi!'
+*/
+//去除空格及制表符(二)  正则表达式：空格制表符转换为空字符""
 //RegExp：esec:捕获，test:检查是否匹配
 //arrayObject：replace:替换，match:匹配
+
 var trim=function(str){
     var regex=/^\s+|\s+$/g;
     var newStr=str.replace(/^\s+|\s+$/g, '')
@@ -132,18 +199,11 @@ var trim=function(str){
 
 //遍历数组-----------------------------------
 function each(arr,fn){
-    for(var i=0;i<arr.length;i++){
+    for(var i=0,len=arr.length;i<len;i++){
         var a=fn(arr[i],i);
         console.log(a)
     }
 }
-//或者使用for-in 循环
-//function each(arr,fn){
-//    for(var i in arr){
-//        var a=fn(arr[i],i);
-//        console.log(a)
-//    }
-//}
 function output(item, index) {
     return (index + ': ' + item)
 }
@@ -157,6 +217,8 @@ function getObjectLength(obj) {
     for(key in obj){
         i++
     }
+    if(obj.toString&&obj.propertyIsEnumerable(toString)===false)
+    i+=1;
     return i
 }
 var obj = {
@@ -166,14 +228,12 @@ var obj = {
         c1: 3,
         c2: 4
     }
-};
-
-//console.log(getObjectLength(obj)); // 3
+};  
+console.log(getObjectLength(obj)); // 3
 
 //学习正则表达式，在`util.js`完成以下代码----------邮箱没有完成
 function isEmail(emailStr) {
-   var pattern =new RegExp("^[a-z0-9]([-_\.]?[a-z0-9]+)*@([-_]?[a-z0-9]+)+[\.][a-z]{2,7}([\.][a-z]{2})?$[^.]+@\.com","g")
-    return pattern.test(emailStr)
+    return emailStr.search(/^[a-z0-9]([-_\.]?[a-z0-9]+)*@([-_]?[a-z0-9]+)+[\.][a-z]{2,7}([\.][a-z]{2})?$/i) !== -1;
 }
 
 function isMobilePhone(phone) {
@@ -181,11 +241,11 @@ function isMobilePhone(phone) {
     return pattern.test(phone)
 }
 
-//var result1=isEmail("sabinahang");
-//var result2=isEmail("sabinahang@sina.com");
-//var result3=isMobilePhone("11");
-//var result4=isMobilePhone("13319283452");
-//console.log(result4)
+var result1=isEmail("sabinahang");
+var result2=isEmail("sabinahang@sina.com");
+var result3=isMobilePhone("11");
+var result4=isMobilePhone("13319283452");
+console.log(result2)
 
 //DOM
 //array与string的转换
