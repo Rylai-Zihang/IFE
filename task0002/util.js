@@ -245,7 +245,7 @@ var result1=isEmail("sabinahang");
 var result2=isEmail("sabinahang@sina.com");
 var result3=isMobilePhone("11");
 var result4=isMobilePhone("13319283452");
-console.log(result2)
+//console.log(result2)
 
 //DOM
 //array与string的转换
@@ -255,7 +255,7 @@ console.log(result2)
 //判断这个类是否存在
 function hasClass(element,className){
     var classes= element.className.split(" ");
-    return classes.indexOf(className);
+    return classes.indexOf(className)===-1?false:true;
 }
 
 function addClass(element, newClassName){
@@ -264,7 +264,7 @@ function addClass(element, newClassName){
 
 function removeClass(element, oldClassName) {
     var index=hasClass(element,oldClassName);
-    if(hasClass(element,oldClassName)!=-1){
+    if(hasClass(element,oldClassName)){
         var classes= element.className.split(" "); 
         classes.splice(index,1);
         element.className =classes.join(" ");
@@ -283,7 +283,7 @@ function removeClass(element, oldClassName) {
 var dom_class=document.getElementById("dom-class");
 
 //console.log(hasClass(dom_class,"red"));//-1
-//addClass(dom_class,"red");
+addClass(dom_class,"red");
 //console.log(hasClass(dom_class,"red"));//1
 //removeClass(dom_class,"center");
 //console.log(hasClass(dom_class,"red"));//0
@@ -345,25 +345,183 @@ function getPosition(element){
 //console.log(getPosition(dom_class));
 
 //mini$
-
+//幼儿版...多个选择器未实现
+/*
 function $(selector){
     var element;
+    var ele;
     if(typeof(selector)=="string"){
+//        alert('String')
         if(selector.indexOf(" ")==-1){//单一选择器
+            ele=document;
             var a=selector.indexOf("#");
             var b=selector.indexOf(".");
             var c=selector.indexOf("[");
             var d=selector.indexOf("]");
+            var len=selector.length;
             if(a===0){ 
-                element=document.getElementById(selector.slice(1));
+                element=ele.getElementById(selector.substring(1));
             }
             else if(b===0){
-                element=document.getElementsByClassName(selector.slice(1))[0];           
+                element=ele.getElementsByClassName(selector.substring(1));           
             }
-            else if(c===0){
-                
+            else if(c===0&&d===len-1){
+                var index=selector.indexOf("=");
+                var attribute=selector.substring(1,index);
+                var matchElements=[];
+                var elements =ele.getElementsByTagName("*");
+                for(var i=0,l=elements.length;i<l;i++){
+                    if(elements[i].getAttribute(attribute)!==null){
+                        console.log(elements[i].getAttribute(attribute))
+                        matchElements.push(elements[i]);
+                    }
+                }
+                element=matchElements;
+            }
+            else{
+                element=ele.getElementsByTagName(selector);
             }
         }
     }
+    return element
     
+}*/
+
+//进化版
+//document.getElementsBy(TagName or ClassName):要讲数组转换成单个dom object才可以
+function $(selector){
+    var sels=selector.replace(/\s+/g, '').split(' ');
+    var ele=document;
+    for(var i=0,len=sels.length;i<len;i++){
+        switch(sels[i][0]){
+            case "#":
+                ele=ele.getElementById(sels[i].substring(1));
+                break;
+            case ".":
+                ele=ele.getElementsByClassName(sels[i].substring(1))[0];
+                break;
+            case "[":
+                var index = sels[i].indexOf("=");
+                var elements =ele.getElementsByTagName("*");
+                ele=[];
+                var l=elements.length;
+                if(index!==-1){
+                    var key = sels[i].substring(1,index);
+                    var value =sels[i].substring(index+1,sels[i].length - 1).slice(1,-1);
+//                    console.log(sels[i])
+//                    console.log(key,value)
+                    for(var j=0;j<l;j++){
+                        if(elements[j].getAttribute(key)===value){ 
+                            ele.push(elements[j]);
+                        }
+                    }
+                }
+                else
+                {
+                    key=sels[i].substring(1);
+                    for(var j=0;j<l;j++){
+                        if(elements[j].getAttribute(key)!==null){
+                            ele.push(elements[j]);
+                        }
+                    }
+                }
+                break;
+            default:
+                ele=ele.getElementsByTagName(sels[i])[0];
+                break;
+        }
+    }
+    if(!ele){
+        ele=null
+    }
+    return ele;
 }
+
+
+//分别实现单独获取id class 属性 tag
+/*
+console.log($("#dom-class"))
+console.log($(".red"))
+console.log($("span"))
+*/
+//多个属性还不行
+//console.log($("[data-name='test'] .red]"))//ele.getElementsByClassName is not a function
+//getElementById is a member of the Document interface, however it returns an Element (which inherits from the Node interface) this interface doesn't have a getElementById function. 
+
+
+//事件
+//我们来继续用封装自己的小jQuery库来实现我们对于JavaScript事件的学习，还是在你的`util.js`，实现以下函数
+function addEvent(element, event, listener) {
+    if(document.addEventListener){
+        element.addEventListener(event, listener);
+    }else{//兼容性
+        element.attachEvent("on"+event,listener)
+    }
+}
+
+function removeEvent(element,vent,listener){
+    element.removeEventListener(event,listener);
+}
+
+// 实现对click事件的绑定
+function addClickEvent(element, listener) {
+    addEvent(element,"click",listener);
+}
+//实现对于Enter按键的绑定
+function addEnterEvent(element,listener){
+    addEvent(element,"keydown",function(){
+        var e= event||window.event;
+        var key=e.keyCode||e.which;
+        if(key===13){
+            listener.call(element,event);
+        }
+    })
+}
+
+//封装成为$的方法
+$.on=addEvent;
+$.un=removeEvent;
+$.click =addClickEvent;
+$.enter = addEnterEvent;
+
+//事件代理
+//根据DOM2.0事件流捕获——执行（空实现则无法执行）——向上级冒泡（沿路执行事件）提高程序效率
+//借助call apply改变this作用域（随你改变调用函数的对象）
+function renderList() {
+    $("#list").innerHTML = '<li>new item</li>';
+}
+
+$.click($("#btn"),renderList)
+
+/*
+var ul=document.getElementById("list");
+$.click(ul,function(){
+    var e=arguments[0]||window.event;
+    target=e.srcElement?e.srcElement:e.target;
+    alert(target.innerHTML);
+    return false
+})*/
+
+//封装到$
+function delegateEvent(element,tag,eventName,listener){
+    $.on(element,eventName,function(){
+    var e=arguments[0]||window.event;
+    var target=e.srcElement?e.srcElement:e.target;
+    if(target&&target.tagName===tag.toUpperCase()){
+        listener.call(target,e)
+        }
+    })
+}
+
+function clickListener(event){
+    var target=event.srcElement?event.srcElement:event.target;
+    alert(event.target.innerHTML)
+}
+$.delegate =delegateEvent;
+
+$.delegate($("#list"), "li", "click", clickListener);
+
+
+//为什么$.on不可或缺？
+//兼容性
+//argument
